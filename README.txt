@@ -1,14 +1,14 @@
-IMAGE ROOM — OFFLINE BLIND QUALITY STUDY
+IMAGE QUALITY EVALUATION — OFFLINE RANK-ORDER COMPARISON
 
 Open index.html in a desktop browser. Keep the images folder beside it.
 No server, installation, account, internet connection, or native JPEG XL support
-is required. If supplied, Image Room standalone.html contains all image assets
+is required. If supplied, Image Quality Evaluation standalone.html contains all image assets
 and can be moved on its own, but takes substantially more memory to open.
 
 Rank the three samples from best (left) to worst (right) by dragging a sample's
 header. The arrow buttons also work with a mouse, touch, or keyboard. On narrow
 screens, the ranking runs from top to bottom. Select ties if you cannot see a
-difference. Save ranking & next explicitly submits a judgment; merely opening
+difference. Submit and continue explicitly submits a judgment; merely opening
 a trial or moving a sample never submits the initial order.
 
 All three viewports share zoom and pan. Drag inside an image to pan when zoomed.
@@ -56,7 +56,7 @@ PNG SHA-256, initial position, notes, confidence, reference use, timestamps,
 view settings, and active viewing time (excludes background-tab time).
 Text cells that could be interpreted as spreadsheet formulas are escaped.
 Draft edits to a submitted judgment are saved separately and only replace its
-exported result when Save ranking & next is pressed again.
+exported result when Update and continue is pressed.
 
 Settings > New session asks for confirmation before replacing current browser
 progress. Export a JSON backup first if you want to retain the previous session.
@@ -64,7 +64,7 @@ progress. Export a JSON backup first if you want to retain the previous session.
 REBUILD FROM SAVED ENCODING RESULTS
 
 From the gjxl repository:
-  python3 tools/blind_quality/build.py --output "/path/to/Image Room"
+  python3 tools/blind_quality/build.py --output "/path/to/Quality Evaluation"
 Add --single-file to also create the self-contained embedded HTML.
 The only preparation dependency is the existing djxl CLI; Python uses its
 standard library. The app itself uses only HTML, CSS, and vanilla JavaScript.
