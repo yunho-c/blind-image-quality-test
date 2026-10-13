@@ -33,14 +33,16 @@ p { line-height: 1.6; }
 .topbar { min-height: 58px; padding: 10px 26px; border-bottom: 1px solid var(--line); background: var(--white); display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .app-title { margin: 0; font: 500 17px/1.3 var(--sans); letter-spacing: -.2px; }
 .topactions { display: flex; align-items: center; gap: 10px; }
-.save-status { color: var(--muted); font-size: 11px; display: flex; align-items: center; gap: 7px; margin-right: 8px; }
-.save-status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #6a747c; }
-.save-status.error { color: #9b352d; }
-.save-status.error::before { background: currentColor; }
+
+
+
+
 main { width: 100%; margin: 0 auto; padding: 20px 26px 14px; }
 .intro { display: flex; align-items: center; justify-content: space-between; gap: 30px; margin-bottom: 18px; }
 .intro h2 { margin: 0 0 5px; font-size: 17px; line-height: 1.35; font-weight: 500; }
 .intro p { color: var(--muted); margin: 0; font-size: 12px; }
+.instructions-link { background: transparent; border: 0; padding: 0; min-height: 0; margin-left: 5px; font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.instructions-link:hover:not(:disabled) { background: transparent; color: var(--ink); }
 .progress-block { width: 220px; flex-shrink: 0; }
 .progress-numbers { display: flex; align-items: baseline; gap: 5px; margin-bottom: 7px; color: var(--muted); font-size: 11px; }
 .progress-numbers strong { margin-left: auto; color: var(--ink); font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -61,8 +63,8 @@ main { width: 100%; margin: 0 auto; padding: 20px 26px 14px; }
 .segmented button { border: 0; border-right: 1px solid var(--line); min-height: 29px; padding: 5px 11px; font-size: 11px; border-radius: 0; }
 .segmented button:last-child { border-right: 0; }
 .segmented button[aria-pressed=true] { background: #3d474f; color: #fff; }
-.reference-btn { font-size: 11px; min-height: 31px; padding: 5px 9px; }
-.reference-btn svg { width: 14px; height: 14px; margin-right: 4px; }
+
+
 .ranking-direction { display: flex; align-items: center; gap: 13px; margin: 0 0 8px; font-size: 10px; line-height: 14px; color: var(--muted); }
 .ranking-direction .rule { height: 1px; background: var(--line); flex: 1; }
 .rank-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
@@ -73,7 +75,10 @@ main { width: 100%; margin: 0 auto; padding: 20px 26px 14px; }
 .card-head:active { cursor: grabbing; }
 .grip { color: #818b93; font-size: 17px; line-height: 1; }
 .sample-letter { font-size: 12px; font-weight: 600; }
-.rank-badge { margin-left: auto; font: 11px var(--mono); color: var(--muted); }
+.rank-badge { margin-left: auto; padding: 3px 6px; border-radius: 2px; font: 11px var(--mono); color: var(--muted); white-space: nowrap; }
+.rank-badge[data-rank="1"] { color: #40604a; background: #eaf3ed; }
+.rank-badge[data-rank="2"] { color: #78641f; background: #f8f1d9; }
+.rank-badge[data-rank="3"] { color: #8a4b47; background: #f7e8e7; }
 .image-well { position: relative; height: 390px; background: var(--well); overflow: hidden; touch-action: none; cursor: crosshair; }
 .image-well img { position: absolute; max-width: none; max-height: none; user-select: none; pointer-events: none; -webkit-user-drag: none; }
 .image-well.pannable { cursor: grab; }
@@ -90,17 +95,13 @@ main { width: 100%; margin: 0 auto; padding: 20px 26px 14px; }
 .ties>span { font-size: 11px; color: var(--muted); margin-right: 5px; }
 .ties button { min-height: 28px; font-size: 11px; padding: 4px 10px; }
 .ties button[aria-pressed=true] { background: var(--accent); border-color: #839cac; color: var(--accent-ink); }
-.gesture-hint { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .decision { display: flex; align-items: flex-end; justify-content: space-between; gap: 25px; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 13px; }
 .judgment-fields { display: flex; align-items: flex-end; gap: 14px; flex: 1; }
 .field { display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: var(--muted); }
 .field input, .field select, .field textarea { background: var(--white); padding: 8px 10px; min-height: 35px; font-size: 12px; color: var(--ink); }
 .field.notes-field { flex: 1; max-width: 460px; }
-.decision-buttons { display: flex; align-items: center; gap: 8px; }
+.decision-buttons { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .decision-buttons .primary { min-width: 160px; }
-.footer-line { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; margin-top: 15px; line-height: 18px; }
-.footer-line button { background: transparent; border: 0; padding: 0; min-height: 18px; font-size: 10px; text-decoration: underline; text-underline-offset: 3px; }
-.foot-dot { color: #929ba2; margin: 0 8px; }
 .notice { padding: 11px 14px; background: #f7f0df; border: 1px solid #d4c499; font-size: 12px; margin-bottom: 16px; border-radius: 3px; line-height: 1.6; }
 .empty-state { padding: 56px 24px; border: 1px solid var(--line); background: var(--white); text-align: center; border-radius: 3px; }
 .empty-state h2 { font: 500 22px/1.4 var(--sans); margin: 0 0 12px; }
@@ -148,7 +149,7 @@ dialog::backdrop { background: #1a1d206b; }
   body { height: 100dvh; display: flex; flex-direction: column; }
   .topbar { flex-shrink: 0; }
   main { flex: 1; min-height: 650px; display: flex; flex-direction: column; }
-  .intro, .footer-line, .notice { flex-shrink: 0; }
+  .intro, .notice { flex-shrink: 0; }
   #comparison { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .toolbar, .ranking-direction, .ranking-options, .decision { flex-shrink: 0; }
   .rank-grid { flex: 1; min-height: 260px; }
@@ -157,32 +158,32 @@ dialog::backdrop { background: #1a1d206b; }
   .sample .image-well { flex: 1; height: auto; min-height: 180px; }
   .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 }
-@media(max-width:1050px) { .gesture-hint { display: none; } .intro p { max-width: 520px; } }
+@media(max-width:1050px) { .intro p { max-width: 520px; } }
 @media(max-width:900px) {
   .topbar { padding-inline: 20px; } main { padding: 20px; }
-  .save-status { margin-right: 0; } .intro { gap: 22px; } .progress-block { width: 170px; }
+  .intro { gap: 22px; } .progress-block { width: 170px; }
   .viewtools { gap: 7px; } .dimensions { display: none; } .rank-grid { gap: 9px; }
   .image-well { height: 360px; } .inspector-well { height: calc(100% - 109px); }
   .decision { align-items: stretch; flex-direction: column; gap: 14px; }
   .judgment-fields { width: 100%; } .field.notes-field { max-width: none; }
-  .decision-buttons { justify-content: flex-end; }
+  .decision-buttons { justify-content: flex-end; width: 100%; }
 }
 @media(max-width:620px) {
   .topbar { min-height: 55px; padding: 10px 14px; gap: 10px; }
   .app-title { font-size: 14px; max-width: 175px; } .topactions { gap: 4px; }
-  .save-status { display: none; } .topactions button { font-size: 11px; padding: 6px 8px; min-height: 32px; }
+  .topactions button { font-size: 11px; padding: 6px 8px; min-height: 32px; }
   main { padding: 17px 14px 15px; } .intro { flex-direction: column; align-items: stretch; gap: 16px; margin-bottom: 16px; }
   .intro h2 { font-size: 16px; } .intro p { font-size: 12px; }
   .progress-block { width: 100%; } .progress-numbers { margin-bottom: 5px; } .progress-bottom { margin-top: 5px; }
   .toolbar { align-items: flex-start; gap: 11px; flex-direction: column; padding-block: 10px; }
-  .viewtools { justify-content: space-between; width: 100%; } .reference-btn { white-space: nowrap; }
+  .viewtools { justify-content: space-between; width: 100%; } 
   .zoom-control { gap: 6px; } .segmented button { padding-inline: 8px; }
   .rank-grid { grid-template-columns: 1fr; gap: 12px; } .image-well { height: 330px; }
   .ranking-direction .worse-label::after { content: " (below)"; }
   .ranking-options { margin-top: 14px; } .ties { gap: 5px; } .ties>span { width: 100%; margin-bottom: 3px; }
   .judgment-fields { flex-direction: column; align-items: stretch; gap: 11px; }
   .decision-buttons { gap: 5px; flex-wrap: wrap; } .decision-buttons .primary { flex: 1; min-width: 155px; }
-  .decision-buttons button { font-size: 12px; } .footer-line { flex-wrap: wrap; gap: 4px; }
+  .decision-buttons button { font-size: 12px; }
   .inspector { width: calc(100vw - 12px); height: calc(100dvh - 12px); }
   .inspector-head { padding: 9px; gap: 7px; flex-wrap: wrap; height: 99px; }
   .inspector-tabs { order: 3; width: 100%; justify-content: center; }
@@ -204,26 +205,26 @@ dialog::backdrop { background: #1a1d206b; }
 </defs></svg>
 <header class="topbar">
  <h1 class="app-title">Image Quality Evaluation</h1>
- <div class="topactions"><span class="save-status" id="save-status" role="status">Saved locally</span><button id="export"><svg><use href="#i-download"/></svg> Export CSV</button><button id="session-open" class="icon plain" aria-label="Settings" title="Settings"><svg><use href="#i-settings"/></svg></button></div>
+ <div class="topactions"><button id="export"><svg><use href="#i-download"/></svg> Export CSV</button><button id="session-open" class="icon plain" aria-label="Settings" title="Settings"><svg><use href="#i-settings"/></svg></button></div>
 </header>
 <main>
  <div id="notice" class="notice" role="status" hidden></div>
  <section class="intro" aria-label="Evaluation instructions and progress">
-  <div><h2>Rank samples by visual quality</h2><p>Order from highest to lowest quality. Mark ties where differences are indistinguishable.</p></div>
+  <div><h2>Rank samples by visual quality</h2><p>Order from highest to lowest quality. Mark ties where differences are indistinguishable. <button id="help-open" class="instructions-link">Instructions</button></p></div>
   <div class="progress-block"><div class="progress-numbers"><span>Completed</span><strong id="rated-count">0</strong><span id="total-count">/ 93</span></div><div class="progress-track" role="progressbar" aria-label="Completed comparisons" aria-valuemin="0" aria-valuemax="93" aria-valuenow="0" id="progress"><div class="progress-fill" id="progress-fill" style="width:0"></div></div><div class="progress-bottom"><span id="remaining">93 remaining</span><button id="progress-open">Review progress</button></div></div>
  </section>
  <section id="comparison" aria-label="Image comparison">
-  <div class="toolbar"><div class="trial-info"><span class="trial-number" id="trial-number">COMPARISON 01</span><span class="pill pending" id="trial-status">Not ranked</span><span class="dimensions" id="dimensions"></span></div><div class="viewtools"><div class="zoom-control"><span>Zoom</span><div class="segmented zoom-buttons" aria-label="Synchronized zoom"><button data-zoom="fit" aria-pressed="true">Fit</button><button data-zoom="1" aria-pressed="false">100%</button><button data-zoom="2" aria-pressed="false">200%</button><button data-zoom="4" aria-pressed="false">400%</button></div></div><button id="reference-open" class="reference-btn"><svg><use href="#i-eye"/></svg> Source reference</button></div></div>
+  <div class="toolbar"><div class="trial-info"><span class="trial-number" id="trial-number">COMPARISON 01</span><span class="pill pending" id="trial-status">Not ranked</span><span class="dimensions" id="dimensions"></span></div><div class="viewtools"><div class="zoom-control"><span>Zoom</span><div class="segmented zoom-buttons" aria-label="Synchronized zoom"><button data-zoom="fit" aria-pressed="true">Fit</button><button data-zoom="1" aria-pressed="false">100%</button><button data-zoom="2" aria-pressed="false">200%</button><button data-zoom="4" aria-pressed="false">400%</button></div></div></div></div>
   <div class="ranking-direction"><span>Highest quality</span><span class="rule"></span><span class="worse-label">Lowest quality</span></div>
   <div class="rank-grid" id="rank-grid" aria-label="Samples ordered from best to worst"></div>
-  <div class="ranking-options"><div class="ties"><span>Tied ranks</span><button id="tie-first" aria-pressed="false">A = B</button><button id="tie-last" aria-pressed="false">B = C</button><button id="tie-all" aria-pressed="false">All samples tied</button></div><span class="gesture-hint">Drag headers to reorder · Drag images to pan · Double-click to inspect</span></div>
-  <div class="decision"><div class="judgment-fields"><label class="field">Confidence (optional)<select id="confidence"><option value="">Not specified</option><option value="clear">Clear preference</option><option value="subtle">Subtle difference</option><option value="guessing">Uncertain</option></select></label><label class="field notes-field">Observations (optional)<input id="notes" maxlength="3000" placeholder="Enter observations" autocomplete="off"></label></div><div class="decision-buttons"><button id="previous" class="plain" aria-label="Previous comparison">Previous</button><button id="skip" class="plain">Skip</button><button id="submit" class="primary" disabled>Submit and continue</button></div></div>
+  <div class="ranking-options"><div class="ties"><span>Tied ranks</span><button id="tie-first" aria-pressed="false">A = B</button><button id="tie-last" aria-pressed="false">B = C</button><button id="tie-all" aria-pressed="false">All samples tied</button></div></div>
+  <div class="decision"><div id="judgment-fields" class="judgment-fields" hidden><label class="field">Confidence (optional)<select id="confidence"><option value="">Not specified</option><option value="clear">Clear preference</option><option value="subtle">Subtle difference</option><option value="guessing">Uncertain</option></select></label><label class="field notes-field">Observations (optional)<input id="notes" maxlength="3000" placeholder="Enter observations" autocomplete="off"></label></div><div class="decision-buttons"><button id="previous" class="plain" aria-label="Previous comparison">Previous</button><button id="skip" class="plain">Skip</button><button id="submit" class="primary" disabled>Submit and continue</button></div></div>
  </section>
  <section id="complete" class="empty-state" hidden><h2 id="complete-title">Evaluation complete</h2><p id="complete-description"></p><div class="actions"><button id="complete-review">Review rankings</button><button id="complete-export" class="primary">Export CSV</button></div></section>
- <footer class="footer-line"><span>Blind comparison<span class="foot-dot">·</span>Full-resolution images<span class="foot-dot">·</span>Local session</span><span><button id="help-open">Instructions</button><span class="foot-dot">·</span><span id="footer-saved">Automatic saving enabled</span></span></footer>
 </main>
 <dialog id="session-dialog" class="modal" aria-labelledby="session-title"><div class="modal-head"><h2 id="session-title">Study settings</h2><button class="icon" data-close="session-dialog" aria-label="Close settings"><svg><use href="#i-close"/></svg></button></div><div class="modal-body">
- <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="allow-reference" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Allow the original source as a reference</label><p>Off by default. When enabled, a Source reference button and a Source tab appear in the image viewer. Reference use is recorded with each ranking.</p><hr>
+ <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="allow-reference" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Allow the original source as a reference</label><p>Off by default. When enabled, the Source tab is available in the image inspector. Reference use is recorded with each ranking.</p><hr>
+ <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="show-judgment-fields" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Show confidence and observations</label><p>Off by default. Hiding these fields preserves existing entries.</p><hr>
  <label class="field">Participant label (optional)<input id="participant" maxlength="120" placeholder="e.g. Observer 01" autocomplete="off"></label>
  <label class="field">Comparison subset<select id="distance-filter"><option value="all">All distances · 93 comparisons</option><option value="1">Distance 1 · 31 comparisons</option><option value="5">Distance 5 · 31 comparisons</option><option value="10">Distance 10 · 31 comparisons</option></select></label>
  <p>Changing this selection keeps every saved ranking. Anonymous sample labels are assigned independently for each comparison.</p><hr>
@@ -244,7 +245,7 @@ dialog::backdrop { background: #1a1d206b; }
 (() => {
  'use strict';
  const STUDY = JSON.parse(document.getElementById('study-data').textContent);
- const APP_VERSION = '1.1.0', SCHEMA = 1, LETTERS = ['A','B','C'];
+ const APP_VERSION = '1.1.1', SCHEMA = 1, LETTERS = ['A','B','C'];
  const byId = new Map(STUDY.trials.map(t => [t.id,t]));
  // Retain the original key so existing sessions survive presentation updates.
  const KEY = 'image-room:v1:' + STUDY.id;
@@ -267,14 +268,15 @@ dialog::backdrop { background: #1a1d206b; }
   }
   const queue = shuffle(STUDY.trials.map(t=>t.id));
   return {schema:SCHEMA,datasetId:STUDY.id,sessionId:Array.from(crypto.getRandomValues(new Uint8Array(12)),v=>v.toString(16).padStart(2,'0')).join(''),
-   createdAt:stamp(),updatedAt:stamp(),participant:'',filter:'all',zoom:'fit',showReference:false,queue,assignments,current:queue[0],drafts:{},ratings:{}};
+   createdAt:stamp(),updatedAt:stamp(),participant:'',filter:'all',zoom:'fit',showReference:false,showJudgmentFields:false,queue,assignments,current:queue[0],drafts:{},ratings:{}};
  }
  function isPermutation(a,b){return Array.isArray(a)&&a.length===b.length&&new Set(a).size===b.length&&a.every(x=>b.includes(x));}
  function validText(s,n){return typeof s==='string'&&s.length<=n;}
  function isRecord(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value);}
  function validateState(s){
   if(!s||s.schema!==SCHEMA||s.datasetId!==STUDY.id)throw Error('This backup belongs to a different study or app version.');
-  if(!validText(s.sessionId,80)||!s.sessionId||!validText(s.createdAt,50)||!validText(s.participant,120)||typeof s.showReference!=='boolean'||!['all','1','5','10'].includes(s.filter)||!['fit','1','2','4'].includes(s.zoom))throw Error('Invalid session details.');
+  if(s.showJudgmentFields===undefined)s.showJudgmentFields=false;
+  if(!validText(s.sessionId,80)||!s.sessionId||!validText(s.createdAt,50)||!validText(s.participant,120)||typeof s.showReference!=='boolean'||typeof s.showJudgmentFields!=='boolean'||!['all','1','5','10'].includes(s.filter)||!['fit','1','2','4'].includes(s.zoom))throw Error('Invalid session details.');
   if(!isPermutation(s.queue,Array.from(byId.keys()))||!(s.current===null||byId.has(s.current))||!isRecord(s.assignments)||!isRecord(s.drafts)||!isRecord(s.ratings))throw Error('Invalid comparison list.');
   for(const t of STUDY.trials)if(!isPermutation(s.assignments[t.id],t.variants.map(v=>v.id)))throw Error('Invalid anonymous assignments.');
   for(const bucket of ['drafts','ratings'])for(const [id,d] of Object.entries(s[bucket])){
@@ -295,9 +297,6 @@ dialog::backdrop { background: #1a1d206b; }
   if(externalChange)return;
   state.updatedAt=stamp();
   try{lastWritten=JSON.stringify(state);localStorage.setItem(KEY,lastWritten);saveFailed=false;}catch(error){saveFailed=true;}
-  $('save-status').textContent=saveFailed?'Local saving unavailable':'Saved locally';
-  $('save-status').classList.toggle('error',saveFailed);
-  $('footer-saved').textContent=saveFailed?'Browser saving unavailable — download a backup':'Automatic saving enabled';
   if(saveFailed)notice('This browser cannot save progress here. Keep this tab open and use Settings → Download backup before closing.');
  }
  function selectedQueue(){return state.queue.filter(id=>state.filter==='all'||String(byId.get(id).distance)===state.filter);}
@@ -365,7 +364,7 @@ dialog::backdrop { background: #1a1d206b; }
     card.querySelector('[data-inspect]').addEventListener('click',()=>openInspector(label));
     card.querySelector('.image-well').addEventListener('dblclick',()=>openInspector(label));
    }
-   grid.append(card);card.querySelector('.rank-badge').textContent='Rank '+r[i];
+   grid.append(card);const badge=card.querySelector('.rank-badge');badge.textContent='Rank '+r[i];badge.dataset.rank=r[i];
    card.querySelector('[data-move="-1"]').disabled=i===0;card.querySelector('[data-move="1"]').disabled=i===2;
   }
   $('tie-first').textContent=d.order[0]+' = '+d.order[1];$('tie-last').textContent=d.order[1]+' = '+d.order[2];
@@ -437,7 +436,7 @@ dialog::backdrop { background: #1a1d206b; }
  function render(){
   const token=++renderToken;clearImages();$('rank-grid').replaceChildren();$('inspector-well').replaceChildren();focus={x:.5,y:.5};
   $('comparison').inert=externalChange;
-  updateReferenceSetting();
+  updateReferenceSetting();updateJudgmentSetting();
   updateProgress();$('comparison').hidden=!state.current;$('complete').hidden=Boolean(state.current);
   if(!state.current){
    const all=Object.keys(state.ratings).length===STUDY.trials.length;
@@ -478,8 +477,10 @@ dialog::backdrop { background: #1a1d206b; }
    if(label==='reference'){draft().referenceViewed=true;save();}
   }catch(error){if(token===renderToken&&inspected===label)status.textContent=error.message;}
  }
+ function updateJudgmentSetting(){
+  $('judgment-fields').hidden=!state.showJudgmentFields;
+ }
  function updateReferenceSetting(){
-  $('reference-open').hidden=!state.showReference;
   $('inspector-tabs').querySelector('[data-sample="reference"]').hidden=!state.showReference;
  }
  function exportFile(filename,content,type){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
@@ -516,7 +517,6 @@ dialog::backdrop { background: #1a1d206b; }
  $('notes').addEventListener('input',()=>{draft().notes=$('notes').value;updateStatus();save();});
  $('confidence').addEventListener('change',()=>{draft().confidence=$('confidence').value;updateStatus();save();});
  document.querySelectorAll('[data-zoom]').forEach(b=>b.addEventListener('click',()=>setZoom(b.dataset.zoom)));
- $('reference-open').addEventListener('click',()=>openInspector('reference'));
  $('inspector-tabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>openInspector(b.dataset.sample)));
  setupPan($('inspector-well'));
  document.addEventListener('keydown',event=>{if(!$('inspector').open||event.altKey||event.ctrlKey||event.metaKey)return;const choice={'1':'A','2':'B','3':'C','r':'reference','R':'reference'}[event.key];if(choice){event.preventDefault();openInspector(choice);}});
@@ -525,8 +525,9 @@ dialog::backdrop { background: #1a1d206b; }
  $('help-open').addEventListener('click',()=>$('help-dialog').showModal());
  $('progress-open').addEventListener('click',showProgress);$('complete-review').addEventListener('click',showProgress);
  $('export').addEventListener('click',exportCSV);$('complete-export').addEventListener('click',exportCSV);
- $('session-open').addEventListener('click',()=>{$('participant').value=state.participant;$('distance-filter').value=state.filter;$('allow-reference').checked=state.showReference;$('new-confirm').hidden=true;$('backup-message').hidden=true;$('session-meta').textContent='Session '+state.sessionId+' · Started '+new Date(state.createdAt).toLocaleDateString();$('session-dialog').showModal();});
+ $('session-open').addEventListener('click',()=>{$('participant').value=state.participant;$('distance-filter').value=state.filter;$('allow-reference').checked=state.showReference;$('show-judgment-fields').checked=state.showJudgmentFields;$('new-confirm').hidden=true;$('backup-message').hidden=true;$('session-meta').textContent='Session '+state.sessionId+' · Started '+new Date(state.createdAt).toLocaleDateString();$('session-dialog').showModal();});
  $('allow-reference').addEventListener('change',()=>{state.showReference=$('allow-reference').checked;updateReferenceSetting();save();});
+ $('show-judgment-fields').addEventListener('change',()=>{state.showJudgmentFields=$('show-judgment-fields').checked;updateJudgmentSetting();layoutImages();save();});
  $('participant').addEventListener('input',()=>{state.participant=$('participant').value;save();});
  $('distance-filter').addEventListener('change',()=>{accountTime();state.filter=$('distance-filter').value;const q=selectedQueue();state.current=q.find(id=>!state.ratings[id])||null;save();render();});
  $('backup-export').addEventListener('click',()=>{accountTime();save();exportFile('quality-evaluation-backup-'+state.sessionId.slice(0,8)+'.json',JSON.stringify(state,null,2),'application/json');startTime();});

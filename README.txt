@@ -11,11 +11,15 @@ screens, the ranking runs from top to bottom. Select ties if you cannot see a
 difference. Submit and continue explicitly submits a judgment; merely opening
 a trial or moving a sample never submits the initial order.
 
+Confidence and observations are hidden by default. Enable them in Settings
+(the gear in the top-right corner). This preference is saved with the session;
+hiding the fields preserves any existing entries.
+
 All three viewports share zoom and pan. Drag inside an image to pan when zoomed.
 Inspect opens a larger viewer; 1/2/3 switch between anonymous samples, and
 Escape closes the viewer. Original references are disabled by default. Enable
-them inside Settings (the gear in the top-right corner); the Source reference
-button and viewer tab then appear, and R opens the reference. At 100%, one image pixel
+them inside Settings (the gear in the top-right corner); the Source tab is then
+available in Inspect, and R selects the reference. At 100%, one image pixel
 occupies one CSS pixel (physical display pixels depend on display scaling).
 Fit resizes all three samples to the same scale. Zooming above 100% uses
 nearest-neighbor display, so interpolation does not hide fine artifacts.
@@ -42,7 +46,7 @@ SAVING AND EXPORT
 Every drag, tie, note, and submitted rating is saved in localStorage when the
 browser permits it. Reopen the SAME path in the SAME browser/profile to resume.
 Moving the file, changing browser, private browsing, or clearing browser data
-can make that storage unavailable. The status indicator reports saving errors.
+can make that storage unavailable. An on-page notice reports saving errors.
 Settings > Download backup exports a portable JSON copy; Restore backup imports
 it after validating the dataset and every trial. A backup is the reliable way
 to move progress between machines, file paths, or browsers. Images are never
