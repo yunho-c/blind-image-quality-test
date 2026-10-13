@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<meta name="description" content="Blind rank-order evaluation of encoded image quality, with local session storage and CSV export.">
+<meta name="description" content="Blind ranking and pairwise evaluation of encoded image quality, with local session storage and CSV export.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='1' y='1' width='30' height='30' rx='2' fill='%23343a40'/%3E%3Cpath d='M8 9h16M8 16h12M8 23h8' fill='none' stroke='%23ffffff' stroke-width='2'/%3E%3C/svg%3E">
 <title>Image Quality Evaluation</title>
 <style>
@@ -66,6 +66,12 @@ main { width: 100%; margin: 0 auto; padding: 4px 26px 14px; }
 .ranking-direction { display: flex; align-items: center; gap: 13px; margin: 0 0 8px; font-size: 10px; line-height: 14px; color: var(--muted); }
 .ranking-direction .rule { height: 1px; background: var(--line); flex: 1; }
 .rank-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.rank-grid.pairwise { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.pairwise .card-head, .pairwise .card-head:active { cursor: default; }
+.pairwise .card-foot { justify-content: flex-end; }
+.pair-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.pair-choices button { font-size: 12px; }
+.pair-choices button[aria-pressed=true] { background: var(--accent); border-color: #839cac; color: var(--accent-ink); }
 .sample { min-width: 0; background: var(--white); border: 1px solid #bec5cb; border-radius: 3px; overflow: hidden; }
 .sample.dragging { opacity: .45; }
 .sample.drag-over { border-color: #416480; outline: 2px solid #416480; outline-offset: 1px; }
@@ -201,7 +207,7 @@ dialog::backdrop { background: #1a1d206b; }
 </defs></svg>
 <header class="topbar">
  <h1 class="app-title">Image Quality Evaluation</h1>
- <p class="app-guidance">Rank samples from highest to lowest visual quality. Mark ties where differences are indistinguishable. <button id="help-open" class="instructions-link">Instructions</button></p>
+ <p class="app-guidance"><span id="evaluation-guidance">Rank samples from highest to lowest visual quality. Mark ties where differences are indistinguishable.</span> <button id="help-open" class="instructions-link">Instructions</button></p>
  <div class="progress-block"><div class="progress-numbers"><span>Completed</span><strong id="rated-count">0</strong><span id="total-count">/ 93</span></div><div class="progress-track" role="progressbar" aria-label="Completed comparisons" aria-valuemin="0" aria-valuemax="93" aria-valuenow="0" id="progress"><div class="progress-fill" id="progress-fill" style="width:0"></div></div><div class="progress-bottom"><span id="remaining">93 remaining</span><button id="progress-open">Review progress</button></div></div>
  <div class="topactions"><button id="export"><svg><use href="#i-download"/></svg> Export CSV</button><button id="session-open" class="icon plain" aria-label="Settings" title="Settings"><svg><use href="#i-settings"/></svg></button></div>
 </header>
@@ -209,26 +215,27 @@ dialog::backdrop { background: #1a1d206b; }
  <div id="notice" class="notice" role="status" hidden></div>
  <section id="comparison" aria-label="Image comparison">
   <div class="toolbar"><div class="trial-info"><span class="trial-number" id="trial-number">#1</span><span class="dimensions" id="dimensions"></span><span class="pill pending" id="trial-status">Not ranked</span></div><div class="viewtools"><div class="zoom-control"><span>Zoom</span><div class="segmented zoom-buttons" aria-label="Synchronized zoom"><button data-zoom="fit" aria-pressed="true">Fit</button><button data-zoom="1" aria-pressed="false">100%</button><button data-zoom="2" aria-pressed="false">200%</button><button data-zoom="4" aria-pressed="false">400%</button></div></div></div></div>
-  <div class="ranking-direction"><span>Highest quality</span><span class="rule"></span><span class="worse-label">Lowest quality</span></div>
+  <div id="ranking-direction" class="ranking-direction"><span>Highest quality</span><span class="rule"></span><span class="worse-label">Lowest quality</span></div>
   <div class="rank-grid" id="rank-grid" aria-label="Samples ordered from best to worst"></div>
-  <div class="ranking-options"><div class="ties"><span>Tied ranks</span><button id="tie-first" aria-pressed="false">A = B</button><button id="tie-last" aria-pressed="false">B = C</button><button id="tie-all" aria-pressed="false">All samples tied</button></div><div id="judgment-fields" class="judgment-fields" hidden><label class="field">Confidence (optional)<select id="confidence"><option value="">Not specified</option><option value="clear">Clear preference</option><option value="subtle">Subtle difference</option><option value="guessing">Uncertain</option></select></label><label class="field notes-field">Observations (optional)<input id="notes" maxlength="3000" placeholder="Enter observations" autocomplete="off"></label></div><div class="decision-buttons"><button id="previous" class="plain" aria-label="Previous comparison">Previous</button><button id="skip" class="plain">Skip</button><button id="submit" class="primary" disabled>Submit and continue</button></div></div>
+  <div class="ranking-options"><div id="ties" class="ties"><span>Tied ranks</span><button id="tie-first" aria-pressed="false">A = B</button><button id="tie-last" aria-pressed="false">B = C</button><button id="tie-all" aria-pressed="false">All samples tied</button></div><div id="pair-choices" class="pair-choices" role="group" aria-label="Pairwise preference" hidden><button data-preference="A" aria-pressed="false">Left better</button><button data-preference="tie" aria-pressed="false">Indistinguishable</button><button data-preference="B" aria-pressed="false">Right better</button></div><div id="judgment-fields" class="judgment-fields" hidden><label class="field">Confidence (optional)<select id="confidence"><option value="">Not specified</option><option value="clear">Clear preference</option><option value="subtle">Subtle difference</option><option value="guessing">Uncertain</option></select></label><label class="field notes-field">Observations (optional)<input id="notes" maxlength="3000" placeholder="Enter observations" autocomplete="off"></label></div><div class="decision-buttons"><button id="previous" class="plain" aria-label="Previous comparison">Previous</button><button id="skip" class="plain">Skip</button><button id="submit" class="primary" disabled>Submit and continue</button></div></div>
  </section>
  <section id="complete" class="empty-state" hidden><h2 id="complete-title">Evaluation complete</h2><p id="complete-description"></p><div class="actions"><button id="complete-review">Review rankings</button><button id="complete-export" class="primary">Export CSV</button></div></section>
 </main>
 <dialog id="session-dialog" class="modal" aria-labelledby="session-title"><div class="modal-head"><h2 id="session-title">Study settings</h2><button class="icon" data-close="session-dialog" aria-label="Close settings"><svg><use href="#i-close"/></svg></button></div><div class="modal-body">
+ <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="pairwise-mode" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Use pairwise comparisons</label><p>Compare two samples at a time. All three encoder pairs are included: 279 comparisons, or 93 per distance. Each mode keeps its own progress; switching resumes where you left off. CSV export uses the selected mode.</p><hr>
  <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="allow-reference" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Allow the original source as a reference</label><p>Off by default. When enabled, the Source tab is available in the image inspector. Reference use is recorded with each ranking.</p><hr>
  <label style="display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:9px"><input id="show-judgment-fields" type="checkbox" style="accent-color:var(--green);width:16px;height:16px"> Show confidence and observations</label><p>Off by default. Hiding these fields preserves existing entries.</p><hr>
  <label class="field">Participant label (optional)<input id="participant" maxlength="120" placeholder="e.g. Observer 01" autocomplete="off"></label>
  <label class="field">Comparison subset<select id="distance-filter"><option value="all">All distances · 93 comparisons</option><option value="1">Distance 1 · 31 comparisons</option><option value="5">Distance 5 · 31 comparisons</option><option value="10">Distance 10 · 31 comparisons</option></select></label>
  <p>Changing this selection keeps every saved ranking. Anonymous sample labels are assigned independently for each comparison.</p><hr>
- <h3>Session backup</h3><p>Progress is saved in this browser at this file location. Download a backup before moving the app, clearing browser data, or changing browsers.</p>
+ <h3>Session backup</h3><p>Progress in both modes is saved in this browser at this file location. Backups include both modes. Download a backup before moving the app, clearing browser data, or changing browsers.</p>
  <div class="modal-actions"><button id="backup-export">Download backup</button><label class="backup-label">Restore backup<input class="visually-hidden" id="backup-import" type="file" accept=".json,application/json"></label></div>
  <div class="notice" id="backup-message" role="status" hidden></div><hr>
- <h3>Reset session</h3><p>A new session randomizes the comparison order and sample assignments and replaces the current rankings. Download a backup first to retain them.</p><button id="new-session" class="danger">New session…</button><div id="new-confirm" hidden><p style="margin:14px 0 10px">Replace the current session and its saved progress?</p><div class="modal-actions"><button id="new-cancel">Keep current session</button><button id="new-confirm-button" class="primary">Replace with new session</button></div></div>
+ <h3>Reset session</h3><p>A new session randomizes the comparison order and sample assignments and clears progress in both modes. Download a backup first to retain it.</p><button id="new-session" class="danger">New session…</button><div id="new-confirm" hidden><p style="margin:14px 0 10px">Replace the current session and its saved progress in both modes?</p><div class="modal-actions"><button id="new-cancel">Keep current session</button><button id="new-confirm-button" class="primary">Replace with new session</button></div></div>
  <div class="session-meta" id="session-meta"></div>
 </div></dialog>
 <dialog id="progress-dialog" class="modal" aria-labelledby="progress-title"><div class="modal-head"><h2 id="progress-title">Evaluation progress</h2><button class="icon" data-close="progress-dialog" aria-label="Close progress"><svg><use href="#i-close"/></svg></button></div><div class="modal-body"><p id="progress-description"></p><p>Shaded = submitted · Dot = draft. Select a comparison to review or revise its ranking.</p><div class="progress-list" id="progress-list"></div></div></dialog>
-<dialog id="help-dialog" class="modal" aria-labelledby="help-title"><div class="modal-head"><h2 id="help-title">Evaluation instructions</h2><button class="icon" data-close="help-dialog" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button></div><div class="modal-body"><ol class="help-steps"><li><b>Comparison set.</b> Each comparison contains three encoded versions of the same source image at the same distance setting. The evaluation includes 31 images at three distance settings. File sizes are not matched.</li><li><b>Ranking.</b> Order samples from highest to lowest visual quality. Drag sample headers, use the arrow buttons, or focus a header and press the arrow keys. On narrow screens, rank from top to bottom. Mark ties when differences are indistinguishable.</li><li><b>Image inspection.</b> Zoom and pan are synchronized. At 100%, one image pixel occupies one CSS pixel. Inspect opens a larger view: <span class="shortcut">1</span> <span class="shortcut">2</span> <span class="shortcut">3</span> select samples; <span class="shortcut">R</span> selects the reference when enabled in Settings; <span class="shortcut">Esc</span> closes the viewer.</li><li><b>Submission.</b> Submit and continue records the displayed order, including an unchanged order. Drafts are saved automatically but excluded from CSV exports. A revised ranking replaces its previous submission only after Update and continue is selected.</li><li><b>Results.</b> CSV exports contain submitted rankings and encoder identities. Reviewing exported identities before completing the evaluation can affect subsequent judgments. Session backups also preserve drafts.</li></ol><p>Display images are full-resolution, 16-bit sRGB PNG decodes of the saved JPEG XL results. References are the original PNGs. Images and responses remain local.</p><p>Photographs by Jyrki Alakuijala · CC0 1.0 Universal.</p></div></dialog>
+<dialog id="help-dialog" class="modal" aria-labelledby="help-title"><div class="modal-head"><h2 id="help-title">Evaluation instructions</h2><button class="icon" data-close="help-dialog" aria-label="Close instructions"><svg><use href="#i-close"/></svg></button></div><div class="modal-body"><ol class="help-steps"><li><b>Comparison set.</b> Samples show encoded versions of the same source image at the same distance setting. The evaluation includes 31 images at three distances. File sizes are not matched. Settings offers three-way ranking (93 comparisons) or pairwise comparison (279 comparisons). Progress is separate for each mode.</li><li><b>Ranking.</b> Order samples from highest to lowest visual quality. Drag sample headers, use the arrow buttons, or focus a header and press the arrow keys. On narrow screens, rank from top to bottom. Mark ties when differences are indistinguishable.</li><li><b>Pairwise comparison.</b> The two samples remain in fixed left and right positions. Select Left better, Indistinguishable, or Right better, then Submit and continue. No preference is selected automatically. Each image and distance is tested with all three encoder pairs; presentation order and left/right placement are randomized.</li><li><b>Image inspection.</b> Zoom and pan are synchronized. At 100%, one image pixel occupies one CSS pixel. Inspect opens a larger view: <span class="shortcut">1</span> <span class="shortcut">2</span> <span class="shortcut">3</span> select samples (1/2 in pairwise mode); <span class="shortcut">R</span> selects the reference when enabled in Settings; <span class="shortcut">Esc</span> closes the viewer.</li><li><b>Submission.</b> Submit and continue records the displayed ranking or selected pairwise preference. Three-way mode permits an unchanged order; pairwise mode requires an explicit choice. Drafts are saved automatically but excluded from CSV exports. A revised judgment replaces its previous submission only after Update and continue is selected.</li><li><b>Results.</b> CSV exports contain submitted judgments from the selected mode and encoder identities. Reviewing exported identities before completing the evaluation can affect subsequent judgments. Session backups preserve both modes, including drafts.</li></ol><p>Display images are full-resolution, 16-bit sRGB PNG decodes of the saved JPEG XL results. References are the original PNGs. Images and responses remain local.</p><p>Photographs by Jyrki Alakuijala · CC0 1.0 Universal.</p></div></dialog>
 <dialog id="inspector" class="inspector" aria-labelledby="inspector-title"><div class="inspector-head"><h2 id="inspector-title">Sample A</h2><div class="inspector-tabs" id="inspector-tabs" aria-label="Choose image"><button data-sample="A" aria-pressed="true">A</button><button data-sample="B" aria-pressed="false">B</button><button data-sample="C" aria-pressed="false">C</button><button data-sample="reference" aria-pressed="false">Source</button></div><button class="icon" data-close="inspector" aria-label="Close image inspector"><svg><use href="#i-close"/></svg></button></div><div id="inspector-well" class="image-well inspector-well"></div><div class="inspector-footer"><span>Same position across every sample · Drag to pan</span><div class="segmented zoom-buttons" aria-label="Inspector zoom"><button data-zoom="fit" aria-pressed="true">Fit</button><button data-zoom="1" aria-pressed="false">100%</button><button data-zoom="2" aria-pressed="false">200%</button><button data-zoom="4" aria-pressed="false">400%</button></div></div></dialog>
 <div id="toast" class="toast" role="status" hidden></div>
 <noscript><p class="notice">Enable JavaScript to compare images and save rankings. This app runs entirely on your device.</p></noscript>
@@ -238,9 +245,14 @@ dialog::backdrop { background: #1a1d206b; }
 (() => {
  'use strict';
  const STUDY = JSON.parse(document.getElementById('study-data').textContent);
- const APP_VERSION = '1.1.1', SCHEMA = 1, LETTERS = ['A','B','C'];
- const byId = new Map(STUDY.trials.map(t => [t.id,t]));
- // Retain the original key so existing sessions survive presentation updates.
+ const APP_VERSION = '2.0.0', SCHEMA = 2, LETTERS = ['A','B','C'];
+ const PAIR_TRIALS = STUDY.trials.flatMap(t => [[0,1],[0,2],[1,2]].map(indices => {
+  const variants=indices.map(i=>t.variants[i]),pairKey=variants.map(v=>v.id).join('+');
+  return {...t,id:t.id+'::'+pairKey,sourceTrialId:t.id,pairKey,variants};
+ }));
+ const trialsByMode={ranking:STUDY.trials,pairwise:PAIR_TRIALS};
+ const byId = new Map([...STUDY.trials,...PAIR_TRIALS].map(t => [t.id,t]));
+ // Retain the original key; validateState migrates legacy three-way sessions.
  const KEY = 'image-room:v1:' + STUDY.id;
  const $ = id => document.getElementById(id);
  const clone = x => JSON.parse(JSON.stringify(x));
@@ -251,31 +263,79 @@ dialog::backdrop { background: #1a1d206b; }
  const permutations = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
  function rand(n) { const buf = new Uint32Array(1); const limit = Math.floor(4294967296 / n) * n; do { crypto.getRandomValues(buf); } while (buf[0] >= limit); return buf[0] % n; }
  function shuffle(values) { const a = [...values]; for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]];}return a; }
- function freshState() {
-  const assignments = {};
-  for(const distance of [1,5,10]) {
-   const trials = STUDY.trials.filter(t => t.distance === distance);
-   const pool = shuffle(Array.from({length:trials.length},(_,i) => i%6));
-   const choices = shuffle(permutations);
-   shuffle(trials).forEach((t,i) => { assignments[t.id] = choices[pool[i]].map(k => t.variants[k].id); });
+ function pairwiseQueue(){
+  const sources=[...new Set(PAIR_TRIALS.map(t=>t.source))],distances=[1,5,10],pools=new Map();
+  for(const source of sources)for(const distance of distances)
+   pools.set(source+'|'+distance,shuffle(PAIR_TRIALS.filter(t=>t.source===source&&t.distance===distance)));
+  const queue=[],recent=[],recentByDistance=new Map(distances.map(d=>[d,[]]));
+  const gap=Math.min(8,Math.floor((sources.length-1)/2));
+  // Each block visits every source once, using a different pair on each visit.
+  // The cooldown also applies to each distance-filtered queue.
+  for(const distance of shuffle(distances.flatMap(d=>[d,d,d]))){
+   const remaining=[...sources],distanceRecent=recentByDistance.get(distance);
+   while(remaining.length){
+    const candidates=remaining.filter(source=>!recent.includes(source)&&!distanceRecent.includes(source));
+    if(!candidates.length)throw Error('Could not arrange pairwise comparisons.');
+    const source=candidates[rand(candidates.length)];remaining.splice(remaining.indexOf(source),1);
+    queue.push(pools.get(source+'|'+distance).pop().id);
+    recent.push(source);distanceRecent.push(source);
+    if(recent.length>gap)recent.shift();if(distanceRecent.length>gap)distanceRecent.shift();
+   }
   }
-  const queue = shuffle(STUDY.trials.map(t=>t.id));
-  return {schema:SCHEMA,datasetId:STUDY.id,sessionId:Array.from(crypto.getRandomValues(new Uint8Array(12)),v=>v.toString(16).padStart(2,'0')).join(''),
-   createdAt:stamp(),updatedAt:stamp(),participant:'',filter:'all',zoom:'fit',showReference:false,showJudgmentFields:false,queue,assignments,current:queue[0],drafts:{},ratings:{}};
+  return queue;
  }
+ function freshComparisons(mode){
+  const assignments={},trials=trialsByMode[mode];
+  if(mode==='ranking'){
+   for(const distance of [1,5,10]){
+    const group=trials.filter(t=>t.distance===distance),pool=shuffle(Array.from({length:group.length},(_,i)=>i%6)),choices=shuffle(permutations);
+    shuffle(group).forEach((t,i)=>{assignments[t.id]=choices[pool[i]].map(k=>t.variants[k].id);});
+   }
+  }else{
+   for(const distance of [1,5,10])for(const pairKey of new Set(trials.map(t=>t.pairKey))){
+    const group=trials.filter(t=>t.distance===distance&&t.pairKey===pairKey),flip=rand(2);
+    const sides=shuffle(Array.from({length:group.length},(_,i)=>(i+flip)%2));
+    shuffle(group).forEach((t,i)=>{const ids=t.variants.map(v=>v.id);assignments[t.id]=sides[i]?ids.reverse():ids;});
+   }
+  }
+  const queue=mode==='pairwise'?pairwiseQueue():shuffle(trials.map(t=>t.id));
+  return {queue,assignments,current:queue[0],drafts:{},ratings:{}};
+ }
+ function freshState(mode='ranking'){
+  return {schema:SCHEMA,datasetId:STUDY.id,sessionId:Array.from(crypto.getRandomValues(new Uint8Array(12)),v=>v.toString(16).padStart(2,'0')).join(''),
+   createdAt:stamp(),updatedAt:stamp(),participant:'',filter:'all',zoom:'fit',showReference:false,showJudgmentFields:false,mode,
+   modes:{ranking:freshComparisons('ranking'),pairwise:mode==='pairwise'?freshComparisons('pairwise'):null}};
+ }
+ function active(){return state.modes[state.mode];}
+ function isPairwise(){return state.mode==='pairwise';}
+ function letters(){return isPairwise()?LETTERS.slice(0,2):LETTERS;}
  function isPermutation(a,b){return Array.isArray(a)&&a.length===b.length&&new Set(a).size===b.length&&a.every(x=>b.includes(x));}
  function validText(s,n){return typeof s==='string'&&s.length<=n;}
  function isRecord(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value);}
- function validateState(s){
-  if(!s||s.schema!==SCHEMA||s.datasetId!==STUDY.id)throw Error('This backup belongs to a different study or app version.');
-  if(s.showJudgmentFields===undefined)s.showJudgmentFields=false;
-  if(!validText(s.sessionId,80)||!s.sessionId||!validText(s.createdAt,50)||!validText(s.participant,120)||typeof s.showReference!=='boolean'||typeof s.showJudgmentFields!=='boolean'||!['all','1','5','10'].includes(s.filter)||!['fit','1','2','4'].includes(s.zoom))throw Error('Invalid session details.');
-  if(!isPermutation(s.queue,Array.from(byId.keys()))||!(s.current===null||byId.has(s.current))||!isRecord(s.assignments)||!isRecord(s.drafts)||!isRecord(s.ratings))throw Error('Invalid comparison list.');
-  for(const t of STUDY.trials)if(!isPermutation(s.assignments[t.id],t.variants.map(v=>v.id)))throw Error('Invalid anonymous assignments.');
-  for(const bucket of ['drafts','ratings'])for(const [id,d] of Object.entries(s[bucket])){
-   if(!byId.has(id)||!d||!isPermutation(d.order,LETTERS)||!Array.isArray(d.ties)||d.ties.length!==2||d.ties.some(v=>typeof v!=='boolean')||!validText(d.notes,3000)||!['','clear','subtle','guessing'].includes(d.confidence)||typeof d.referenceViewed!=='boolean'||!Number.isFinite(d.elapsedMs)||d.elapsedMs<0||d.elapsedMs>1e12)throw Error('Invalid saved judgment.');
+ function validateComparisons(c,mode){
+  const trials=trialsByMode[mode],ids=trials.map(t=>t.id),pairwise=mode==='pairwise';
+  if(!isRecord(c)||!isPermutation(c.queue,ids)||!(c.current===null||ids.includes(c.current))||!isRecord(c.assignments)||!isRecord(c.drafts)||!isRecord(c.ratings))throw Error('Invalid '+mode+' comparison list.');
+  if(!isPermutation(Object.keys(c.assignments),ids))throw Error('Invalid anonymous assignments.');
+  for(const t of trials)if(!isPermutation(c.assignments[t.id],t.variants.map(v=>v.id)))throw Error('Invalid anonymous assignments.');
+  for(const bucket of ['drafts','ratings'])for(const [id,d] of Object.entries(c[bucket])){
+   if(!ids.includes(id)||!isRecord(d)||!validText(d.notes,3000)||!['','clear','subtle','guessing'].includes(d.confidence)||typeof d.referenceViewed!=='boolean'||!Number.isFinite(d.elapsedMs)||d.elapsedMs<0||d.elapsedMs>1e12)throw Error('Invalid saved judgment.');
+   if(pairwise){
+    if(!['','A','B','tie'].includes(d.choice)||(bucket==='ratings'&&!d.choice))throw Error('Invalid pairwise preference.');
+   }else if(!isPermutation(d.order,LETTERS)||!Array.isArray(d.ties)||d.ties.length!==2||d.ties.some(v=>typeof v!=='boolean'))throw Error('Invalid saved ranking.');
    if(bucket==='ratings'&&(!validText(d.submittedAt,50)||!validText(d.updatedAt,50)||!d.view||!['fit','1','2','4'].includes(d.view.zoom)||!Number.isFinite(d.view.width)||!Number.isFinite(d.view.height)||!Number.isFinite(d.view.dpr)))throw Error('Invalid submission metadata.');
   }
+ }
+ function validateState(s){
+  if(!isRecord(s)||![1,SCHEMA].includes(s.schema)||s.datasetId!==STUDY.id)throw Error('This backup belongs to a different study or app version.');
+  if(s.schema===1){
+   s={...s,mode:'ranking',modes:{ranking:Object.fromEntries(['queue','assignments','current','drafts','ratings'].map(k=>[k,s[k]])),pairwise:null},schema:SCHEMA};
+   for(const key of ['queue','assignments','current','drafts','ratings'])delete s[key];
+   if(s.showJudgmentFields===undefined)s.showJudgmentFields=false;
+  }
+  if(!validText(s.sessionId,80)||!s.sessionId||!validText(s.createdAt,50)||!validText(s.participant,120)||typeof s.showReference!=='boolean'||typeof s.showJudgmentFields!=='boolean'||!['all','1','5','10'].includes(s.filter)||!['fit','1','2','4'].includes(s.zoom)||!['ranking','pairwise'].includes(s.mode)||!isRecord(s.modes))throw Error('Invalid session details.');
+  validateComparisons(s.modes.ranking,'ranking');
+  if(s.modes.pairwise!==null)validateComparisons(s.modes.pairwise,'pairwise');
+  if(s.mode==='pairwise'&&!s.modes.pairwise)throw Error('Missing pairwise progress.');
   return s;
  }
  function notify(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3800);}
@@ -292,31 +352,31 @@ dialog::backdrop { background: #1a1d206b; }
   try{lastWritten=JSON.stringify(state);localStorage.setItem(KEY,lastWritten);saveFailed=false;}catch(error){saveFailed=true;}
   if(saveFailed)notice('This browser cannot save progress here. Keep this tab open and use Settings → Download backup before closing.');
  }
- function selectedQueue(){return state.queue.filter(id=>state.filter==='all'||String(byId.get(id).distance)===state.filter);}
- function trial(){return byId.get(state.current);}
+ function selectedQueue(){return active().queue.filter(id=>state.filter==='all'||String(byId.get(id).distance)===state.filter);}
+ function trial(){return byId.get(active().current);}
  function draft(){
-  if(!state.current)return null;
-  if(!state.drafts[state.current])state.drafts[state.current]=state.ratings[state.current]?clone(state.ratings[state.current]):{order:[...LETTERS],ties:[false,false],notes:'',confidence:'',referenceViewed:false,elapsedMs:0};
-  return state.drafts[state.current];
+  if(!active().current)return null;
+  if(!active().drafts[active().current])active().drafts[active().current]=active().ratings[active().current]?clone(active().ratings[active().current]):{...(isPairwise()?{choice:''}:{order:[...LETTERS],ties:[false,false]}),notes:'',confidence:'',referenceViewed:false,elapsedMs:0};
+  return active().drafts[active().current];
  }
- function accountTime(){if(elapsedStart!==null&&state.current){draft().elapsedMs+=Math.max(0,Math.round(performance.now()-elapsedStart));}elapsedStart=null;}
- function startTime(){if(!document.hidden&&state.current&&loadedLabels.size===3&&!externalChange)elapsedStart=performance.now();}
- function ratingChanged(d,r){return !r||JSON.stringify([d.order,d.ties,d.notes,d.confidence])!==JSON.stringify([r.order,r.ties,r.notes,r.confidence]);}
+ function accountTime(){if(elapsedStart!==null&&active().current){draft().elapsedMs+=Math.max(0,Math.round(performance.now()-elapsedStart));}elapsedStart=null;}
+ function startTime(){if(!document.hidden&&active().current&&loadedLabels.size===letters().length&&!externalChange)elapsedStart=performance.now();}
+ function ratingChanged(d,r){return !r||JSON.stringify([d.order,d.ties,d.choice,d.notes,d.confidence])!==JSON.stringify([r.order,r.ties,r.choice,r.notes,r.confidence]);}
  function ranks(d){let r=1;return d.order.map((_,i)=>{if(i&&!d.ties[i-1])r=i+1;return r;});}
- function variant(label){const t=trial();return t.variants.find(v=>v.id===state.assignments[t.id][LETTERS.indexOf(label)]);}
+ function variant(label){const t=trial();return t.variants.find(v=>v.id===active().assignments[t.id][LETTERS.indexOf(label)]);}
  function updateProgress(){
-  const queue=selectedQueue(),n=queue.filter(id=>state.ratings[id]).length;
+  const queue=selectedQueue(),n=queue.filter(id=>active().ratings[id]).length;
   $('rated-count').textContent=n;$('total-count').textContent='/ '+queue.length;
   $('remaining').textContent=(queue.length-n)+' remaining';$('progress-fill').style.width=(100*n/queue.length)+'%';
   $('progress').setAttribute('aria-valuenow',n);$('progress').setAttribute('aria-valuemax',queue.length);
-  $('export').disabled=Object.keys(state.ratings).length===0;
+  $('export').disabled=Object.keys(active().ratings).length===0;
  }
  function updateStatus(){
-  if(!state.current)return;
-  const d=draft(),r=state.ratings[state.current],changed=ratingChanged(d,r);
-  $('trial-status').textContent=r?(changed?'Draft changes':'Saved'):'Not ranked';
+  if(!active().current)return;
+  const d=draft(),r=active().ratings[active().current],changed=ratingChanged(d,r);
+  $('trial-status').textContent=r?(changed?'Draft changes':'Saved'):(isPairwise()?'Not evaluated':'Not ranked');
   $('trial-status').classList.toggle('pending',!r||changed);
-  $('submit').disabled=loadedLabels.size!==3||externalChange;
+  $('submit').disabled=loadedLabels.size!==letters().length||externalChange||(isPairwise()&&!d.choice);
   $('submit').textContent=r?'Update and continue':'Submit and continue';
   $('skip').textContent=r?'Next':'Skip';
  }
@@ -346,26 +406,37 @@ dialog::backdrop { background: #1a1d206b; }
   loadedImages.set(label,promise);return promise;
  }
  function renderCards(){
-  const d=draft(),r=ranks(d),grid=$('rank-grid');
-  for(const [i,label] of d.order.entries()){
+  const d=draft(),pairwise=isPairwise(),order=pairwise?letters():d.order,r=pairwise?[]:ranks(d),grid=$('rank-grid');
+  for(const [i,label] of order.entries()){
    let card=grid.querySelector('[data-label="'+label+'"]');
    if(!card){
     card=document.createElement('article');card.className='sample';card.dataset.label=label;card.setAttribute('aria-label','Sample '+label);
-    card.innerHTML='<div class="card-head" tabindex="0" role="button" aria-label="Reorder sample '+label+' with the arrow keys or drag"><span class="grip" aria-hidden="true">⠿</span><span class="sample-letter">Sample '+label+'</span><span class="rank-badge"></span></div><div class="image-well" data-label="'+label+'"><span class="image-status">Loading sample…</span></div><div class="card-foot"><div class="move-controls"><button data-move="-1" aria-label="Rank sample '+label+' better">←</button><button data-move="1" aria-label="Rank sample '+label+' worse">→</button></div><button class="inspect-button" data-inspect="'+label+'">Inspect<svg><use href="#i-expand"/></svg></button></div>';
-    grid.append(card);setupPan(card.querySelector('.image-well'));setupDrag(card);
-    card.querySelector('.card-head').addEventListener('keydown',event=>{if(['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'].includes(event.key)){event.preventDefault();moveLabel(label,['ArrowLeft','ArrowUp'].includes(event.key)?-1:1);}});
-    card.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>moveLabel(label,Number(b.dataset.move))));
+    const headAttrs=pairwise?'':' tabindex="0" role="button" aria-label="Reorder sample '+label+' with the arrow keys or drag"';
+    card.innerHTML='<div class="card-head"'+headAttrs+'>'+(pairwise?'':'<span class="grip" aria-hidden="true">⠿</span>')+'<span class="sample-letter">Sample '+label+'</span>'+(pairwise?'':'<span class="rank-badge"></span>')+'</div><div class="image-well" data-label="'+label+'"><span class="image-status">Loading sample…</span></div><div class="card-foot">'+(pairwise?'':'<div class="move-controls"><button data-move="-1" aria-label="Rank sample '+label+' better">←</button><button data-move="1" aria-label="Rank sample '+label+' worse">→</button></div>')+'<button class="inspect-button" data-inspect="'+label+'">Inspect<svg><use href="#i-expand"/></svg></button></div>';
+    grid.append(card);setupPan(card.querySelector('.image-well'));
+    if(!pairwise){
+     setupDrag(card);
+     card.querySelector('.card-head').addEventListener('keydown',event=>{if(['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'].includes(event.key)){event.preventDefault();moveLabel(label,['ArrowLeft','ArrowUp'].includes(event.key)?-1:1);}});
+     card.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>moveLabel(label,Number(b.dataset.move))));
+    }
     card.querySelector('[data-inspect]').addEventListener('click',()=>openInspector(label));
     card.querySelector('.image-well').addEventListener('dblclick',()=>openInspector(label));
    }
-   grid.append(card);const badge=card.querySelector('.rank-badge');badge.textContent='Rank '+r[i];badge.dataset.rank=r[i];
-   card.querySelector('[data-move="-1"]').disabled=i===0;card.querySelector('[data-move="1"]').disabled=i===2;
+   grid.append(card);
+   if(!pairwise){
+    const badge=card.querySelector('.rank-badge');badge.textContent='Rank '+r[i];badge.dataset.rank=r[i];
+    card.querySelector('[data-move="-1"]').disabled=i===0;card.querySelector('[data-move="1"]').disabled=i===2;
+   }
   }
-  $('tie-first').textContent=d.order[0]+' = '+d.order[1];$('tie-last').textContent=d.order[1]+' = '+d.order[2];
-  $('tie-first').setAttribute('aria-pressed',d.ties[0]);$('tie-last').setAttribute('aria-pressed',d.ties[1]);$('tie-all').setAttribute('aria-pressed',d.ties.every(Boolean));
+  if(pairwise){
+   $('pair-choices').querySelectorAll('[data-preference]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.preference===d.choice));
+  }else{
+   $('tie-first').textContent=d.order[0]+' = '+d.order[1];$('tie-last').textContent=d.order[1]+' = '+d.order[2];
+   $('tie-first').setAttribute('aria-pressed',d.ties[0]);$('tie-last').setAttribute('aria-pressed',d.ties[1]);$('tie-all').setAttribute('aria-pressed',d.ties.every(Boolean));
+  }
   layoutImages();updateStatus();
  }
- function moveTo(label,index){const d=draft(),old=d.order.indexOf(label);if(old===index||index<0||index>2||externalChange)return;d.order.splice(old,1);d.order.splice(index,0,label);d.ties=[false,false];renderCards();save();}
+ function moveTo(label,index){if(isPairwise())return;const d=draft(),old=d.order.indexOf(label);if(old===index||index<0||index>2||externalChange)return;d.order.splice(old,1);d.order.splice(index,0,label);d.ties=[false,false];renderCards();save();}
  function moveLabel(label,delta){moveTo(label,draft().order.indexOf(label)+delta);}
  function setupDrag(card){
   const head=card.querySelector('.card-head');
@@ -430,31 +501,31 @@ dialog::backdrop { background: #1a1d206b; }
  function render(){
   const token=++renderToken;clearImages();$('rank-grid').replaceChildren();$('inspector-well').replaceChildren();focus={x:.5,y:.5};
   $('comparison').inert=externalChange;
-  updateReferenceSetting();updateJudgmentSetting();
-  updateProgress();$('comparison').hidden=!state.current;$('complete').hidden=Boolean(state.current);
-  if(!state.current){
-   const all=Object.keys(state.ratings).length===STUDY.trials.length;
+  updateModeUI();updateReferenceSetting();updateJudgmentSetting();
+  updateProgress();$('comparison').hidden=!active().current;$('complete').hidden=Boolean(active().current);
+  if(!active().current){
+   const total=trialsByMode[state.mode].length,all=Object.keys(active().ratings).length===total;
    $('complete-title').textContent=all?'Evaluation complete':'Selected comparisons complete';
-   $('complete-description').textContent=all?'All 93 rankings have been submitted. Export the results or review individual comparisons.':'All rankings in this subset have been submitted. Select another distance in Settings to continue.';
+   $('complete-description').textContent=all?'All '+total+' judgments in this mode have been submitted. Export the results or review individual comparisons.':'All judgments in this subset have been submitted. Select another distance in Settings to continue.';
    save();return;
   }
   const d=draft(),t=trial();
-  $('trial-number').textContent='#'+(state.queue.indexOf(t.id)+1);
+  $('trial-number').textContent='#'+(active().queue.indexOf(t.id)+1);
   $('dimensions').textContent=t.width+' × '+t.height+' px';
   $('notes').value=d.notes;$('confidence').value=d.confidence;
   $('previous').disabled=selectedQueue().indexOf(t.id)<=0;
   renderCards();setZoom(state.zoom);
-  for(const label of LETTERS){
+  for(const label of letters()){
    const well=$('rank-grid').querySelector('.image-well[data-label="'+label+'"]');
    loadImage(label,token).then(image=>{
-    if(token!==renderToken)return;well.replaceChildren(image);loadedLabels.add(label);layoutImages();updateStatus();if(loadedLabels.size===3)startTime();
+    if(token!==renderToken)return;well.replaceChildren(image);loadedLabels.add(label);layoutImages();updateStatus();if(loadedLabels.size===letters().length)startTime();
    }).catch(error=>{if(token!==renderToken)return;well.querySelector('.image-status').textContent=error.message;updateStatus();});
   }
  }
- function navigate(id){accountTime();state.current=id;save();render();window.scrollTo({top:0,behavior:'instant'});}
- function nextPending(current){const queue=selectedQueue(),index=queue.indexOf(current);for(let i=1;i<=queue.length;i++){const id=queue[(index+i)%queue.length];if(!state.ratings[id])return id;}return null;}
+ function navigate(id){accountTime();active().current=id;save();render();window.scrollTo({top:0,behavior:'instant'});}
+ function nextPending(current){const queue=selectedQueue(),index=queue.indexOf(current);for(let i=1;i<=queue.length;i++){const id=queue[(index+i)%queue.length];if(!active().ratings[id])return id;}return null;}
  async function openInspector(label){
-  if(!trial()||(label==='reference'&&!state.showReference))return;inspected=label;
+  if(!trial()||(label==='reference'?!state.showReference:!letters().includes(label)))return;inspected=label;
   if(!$('inspector').open)$('inspector').showModal();
   $('inspector-title').textContent=label==='reference'?'Original source':'Sample '+label;
   $('inspector-tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.sample===label));
@@ -471,6 +542,19 @@ dialog::backdrop { background: #1a1d206b; }
    if(label==='reference'){draft().referenceViewed=true;save();}
   }catch(error){if(token===renderToken&&inspected===label)status.textContent=error.message;}
  }
+ function updateModeUI(){
+  const pairwise=isPairwise(),total=trialsByMode[state.mode].length;
+  $('evaluation-guidance').textContent=pairwise?'Compare the two samples. Select the better sample, or mark them indistinguishable.':'Rank samples from highest to lowest visual quality. Mark ties where differences are indistinguishable.';
+  $('ranking-direction').hidden=pairwise;$('ties').hidden=pairwise;$('pair-choices').hidden=!pairwise;
+  $('rank-grid').classList.toggle('pairwise',pairwise);
+  $('rank-grid').setAttribute('aria-label',pairwise?'Samples in fixed left and right positions':'Samples ordered from best to worst');
+  $('inspector-tabs').querySelector('[data-sample="C"]').hidden=pairwise;
+  $('pairwise-mode').checked=pairwise;
+  for(const option of $('distance-filter').options)option.textContent=option.value==='all'?'All distances · '+total+' comparisons':'Distance '+option.value+' · '+trialsByMode[state.mode].filter(t=>String(t.distance)===option.value).length+' comparisons';
+ }
+ function ensureCurrent(){
+  if(!selectedQueue().includes(active().current))active().current=selectedQueue().find(id=>!active().ratings[id])||null;
+ }
  function updateJudgmentSetting(){
   $('judgment-fields').hidden=!state.showJudgmentFields;
  }
@@ -480,37 +564,54 @@ dialog::backdrop { background: #1a1d206b; }
  function exportFile(filename,content,type){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
  function csvCell(value){if(value===null||value===undefined)return '""';let v=String(value);if(typeof value==='string'&&/^[\s]*[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
  function exportCSV(){
-  const headers=['study_id','app_version','session_id','participant','trial_id','presentation_index','source_image','source_sha256','distance','effort','blind_label','initial_position','final_position','rank','tied','encoder','encoded_bytes','encoded_sha256','display_png_sha256','confidence','notes','reference_viewed','active_viewing_ms','submitted_utc','updated_utc','zoom','viewport_width','viewport_height','device_pixel_ratio'];
+  if(isPairwise()){exportPairwiseCSV();return;}
+  const headers=['study_id','app_version','session_id','participant','trial_id','presentation_index','source_image','source_sha256','distance','effort','blind_label','initial_position','final_position','rank','tied','encoder','encoded_bytes','encoded_sha256','display_png_sha256','confidence','notes','reference_viewed','active_viewing_ms','submitted_utc','updated_utc','zoom','viewport_width','viewport_height','device_pixel_ratio','comparison_mode'];
   const rows=[headers];
-  for(const id of state.queue){
-   const r=state.ratings[id];if(!r)continue;const t=byId.get(id),rr=ranks(r);
+  for(const id of active().queue){
+   const r=active().ratings[id];if(!r)continue;const t=byId.get(id),rr=ranks(r);
    for(const [position,label] of r.order.entries()){
-    const v=t.variants.find(v=>v.id===state.assignments[id][LETTERS.indexOf(label)]);
-    rows.push([STUDY.id,APP_VERSION,state.sessionId,state.participant,id,state.queue.indexOf(id)+1,t.source,t.sourceSha256,t.distance,t.effort,label,LETTERS.indexOf(label)+1,position+1,rr[position],rr.filter(n=>n===rr[position]).length>1,v.name,v.encodedBytes,v.encodedSha256,v.pngSha256,r.confidence,r.notes,r.referenceViewed,r.elapsedMs,r.submittedAt,r.updatedAt,r.view.zoom,r.view.width,r.view.height,r.view.dpr]);
+    const v=t.variants.find(v=>v.id===active().assignments[id][LETTERS.indexOf(label)]);
+    rows.push([STUDY.id,APP_VERSION,state.sessionId,state.participant,id,active().queue.indexOf(id)+1,t.source,t.sourceSha256,t.distance,t.effort,label,LETTERS.indexOf(label)+1,position+1,rr[position],rr.filter(n=>n===rr[position]).length>1,v.name,v.encodedBytes,v.encodedSha256,v.pngSha256,r.confidence,r.notes,r.referenceViewed,r.elapsedMs,r.submittedAt,r.updatedAt,r.view.zoom,r.view.width,r.view.height,r.view.dpr,'three_way']);
    }
   }
   if(rows.length===1){notify('Save a ranking before exporting results.');return;}
-  exportFile('quality-evaluation-'+state.sessionId.slice(0,8)+'.csv','\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n','text/csv;charset=utf-8');notify('Exported '+(rows.length-1)+' rows. The CSV includes encoder identities.');
+  exportFile('quality-evaluation-three-way-'+state.sessionId.slice(0,8)+'.csv','\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n','text/csv;charset=utf-8');notify('Exported '+(rows.length-1)+' rows. The CSV includes encoder identities.');
+ }
+ function pairwiseCSVRows(s){
+  const c=s.modes.pairwise;
+  const rows=[['study_id','app_version','session_id','participant','comparison_mode','trial_id','source_trial_id','presentation_index','source_image','source_sha256','distance','effort','left_encoder','right_encoder','preference','winner_encoder','left_encoded_bytes','right_encoded_bytes','left_encoded_sha256','right_encoded_sha256','left_display_png_sha256','right_display_png_sha256','confidence','notes','reference_viewed','active_viewing_ms','submitted_utc','updated_utc','zoom','viewport_width','viewport_height','device_pixel_ratio']];
+  for(const [i,id] of c.queue.entries()){
+   const r=c.ratings[id];if(!r)continue;const t=byId.get(id);
+   const [left,right]=c.assignments[id].map(key=>t.variants.find(v=>v.id===key));
+   rows.push([STUDY.id,APP_VERSION,s.sessionId,s.participant,'pairwise',id,t.sourceTrialId,i+1,t.source,t.sourceSha256,t.distance,t.effort,left.name,right.name,{A:'left',B:'right',tie:'tie'}[r.choice],r.choice==='tie'?'':(r.choice==='A'?left:right).name,left.encodedBytes,right.encodedBytes,left.encodedSha256,right.encodedSha256,left.pngSha256,right.pngSha256,r.confidence,r.notes,r.referenceViewed,r.elapsedMs,r.submittedAt,r.updatedAt,r.view.zoom,r.view.width,r.view.height,r.view.dpr]);
+  }
+  return rows;
+ }
+ function exportPairwiseCSV(){
+  const rows=pairwiseCSVRows(state);
+  if(rows.length===1){notify('Save a preference before exporting results.');return;}
+  exportFile('quality-evaluation-pairwise-'+state.sessionId.slice(0,8)+'.csv','\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n','text/csv;charset=utf-8');notify('Exported '+(rows.length-1)+' comparisons. The CSV includes encoder identities.');
  }
  function showProgress(){
-  const queue=selectedQueue(),done=queue.filter(id=>state.ratings[id]).length;
-  $('progress-description').textContent=done+' of '+queue.length+' ranked in this selection. '+Object.keys(state.ratings).length+' of 93 ranked overall.';
+  const queue=selectedQueue(),done=queue.filter(id=>active().ratings[id]).length;
+  $('progress-description').textContent=done+' of '+queue.length+' evaluated in this selection. '+Object.keys(active().ratings).length+' of '+trialsByMode[state.mode].length+' in '+(isPairwise()?'pairwise':'three-way')+' mode.';
   const list=$('progress-list');list.replaceChildren();
-  for(const id of queue){const button=document.createElement('button'),n=state.queue.indexOf(id)+1;button.textContent=String(n).padStart(2,'0');button.classList.toggle('completed',Boolean(state.ratings[id]));button.classList.toggle('drafted',Boolean(state.drafts[id])&&ratingChanged(state.drafts[id],state.ratings[id]));button.classList.toggle('current',state.current===id);button.setAttribute('aria-label','Comparison '+n+(state.ratings[id]?', ranked':', pending'));button.addEventListener('click',()=>{$('progress-dialog').close();navigate(id);});list.append(button);}
+  for(const id of queue){const button=document.createElement('button'),n=active().queue.indexOf(id)+1;button.textContent=String(n).padStart(2,'0');button.classList.toggle('completed',Boolean(active().ratings[id]));button.classList.toggle('drafted',Boolean(active().drafts[id])&&ratingChanged(active().drafts[id],active().ratings[id]));button.classList.toggle('current',active().current===id);button.setAttribute('aria-label','Comparison '+n+(active().ratings[id]?', ranked':', pending'));button.addEventListener('click',()=>{$('progress-dialog').close();navigate(id);});list.append(button);}
   $('progress-dialog').showModal();
  }
  $('submit').addEventListener('click',()=>{
-  if(!state.current||loadedLabels.size!==3||externalChange)return;
-  accountTime();const id=state.current,d=clone(draft()),now=stamp();
-  d.submittedAt=state.ratings[id]?.submittedAt||now;d.updatedAt=now;d.view={zoom:state.zoom,width:innerWidth,height:innerHeight,dpr:devicePixelRatio};
-  state.ratings[id]=d;state.drafts[id]=clone(d);navigate(nextPending(id));notify('Saved.');
+  if(!active().current||loadedLabels.size!==letters().length||externalChange||(isPairwise()&&!draft().choice))return;
+  accountTime();const id=active().current,d=clone(draft()),now=stamp();
+  d.submittedAt=active().ratings[id]?.submittedAt||now;d.updatedAt=now;d.view={zoom:state.zoom,width:innerWidth,height:innerHeight,dpr:devicePixelRatio};
+  active().ratings[id]=d;active().drafts[id]=clone(d);navigate(nextPending(id));notify('Saved.');
  });
  $('skip').addEventListener('click',()=>{
-  const wasRanked=Boolean(state.ratings[state.current]),next=nextPending(state.current);
+  const wasRanked=Boolean(active().ratings[active().current]),next=nextPending(active().current);
   navigate(next);if(!wasRanked)notify('Left unranked.');
  });
- $('previous').addEventListener('click',()=>{const q=selectedQueue(),i=q.indexOf(state.current);if(i>0)navigate(q[i-1]);});
- for(const [id,index] of [['tie-first',0],['tie-last',1],['tie-all',2]])$(id).addEventListener('click',()=>{if(externalChange)return;const d=draft();if(index===2)d.ties=d.ties.every(Boolean)?[false,false]:[true,true];else d.ties[index]=!d.ties[index];renderCards();save();});
+ $('previous').addEventListener('click',()=>{const q=selectedQueue(),i=q.indexOf(active().current);if(i>0)navigate(q[i-1]);});
+ for(const [id,index] of [['tie-first',0],['tie-last',1],['tie-all',2]])$(id).addEventListener('click',()=>{if(externalChange||isPairwise())return;const d=draft();if(index===2)d.ties=d.ties.every(Boolean)?[false,false]:[true,true];else d.ties[index]=!d.ties[index];renderCards();save();});
+ $('pair-choices').querySelectorAll('[data-preference]').forEach(b=>b.addEventListener('click',()=>{if(externalChange||!isPairwise())return;draft().choice=b.dataset.preference;renderCards();save();}));
  $('notes').addEventListener('input',()=>{draft().notes=$('notes').value;updateStatus();save();});
  $('confidence').addEventListener('change',()=>{draft().confidence=$('confidence').value;updateStatus();save();});
  document.querySelectorAll('[data-zoom]').forEach(b=>b.addEventListener('click',()=>setZoom(b.dataset.zoom)));
@@ -522,26 +623,32 @@ dialog::backdrop { background: #1a1d206b; }
  $('help-open').addEventListener('click',()=>$('help-dialog').showModal());
  $('progress-open').addEventListener('click',showProgress);$('complete-review').addEventListener('click',showProgress);
  $('export').addEventListener('click',exportCSV);$('complete-export').addEventListener('click',exportCSV);
- $('session-open').addEventListener('click',()=>{$('participant').value=state.participant;$('distance-filter').value=state.filter;$('allow-reference').checked=state.showReference;$('show-judgment-fields').checked=state.showJudgmentFields;$('new-confirm').hidden=true;$('backup-message').hidden=true;$('session-meta').textContent='Session '+state.sessionId+' · Started '+new Date(state.createdAt).toLocaleDateString();$('session-dialog').showModal();});
+ $('session-open').addEventListener('click',()=>{$('participant').value=state.participant;$('distance-filter').value=state.filter;$('pairwise-mode').checked=isPairwise();$('allow-reference').checked=state.showReference;$('show-judgment-fields').checked=state.showJudgmentFields;$('new-confirm').hidden=true;$('backup-message').hidden=true;$('session-meta').textContent='Session '+state.sessionId+' · Started '+new Date(state.createdAt).toLocaleDateString();$('session-dialog').showModal();});
+ $('pairwise-mode').addEventListener('change',()=>{
+  if(externalChange){$('pairwise-mode').checked=isPairwise();return;}
+  accountTime();state.mode=$('pairwise-mode').checked?'pairwise':'ranking';
+  if(!active())state.modes[state.mode]=freshComparisons(state.mode);
+  ensureCurrent();clearTimeout(toastTimer);$('toast').hidden=true;save();render();
+ });
  $('allow-reference').addEventListener('change',()=>{state.showReference=$('allow-reference').checked;updateReferenceSetting();save();});
  $('show-judgment-fields').addEventListener('change',()=>{state.showJudgmentFields=$('show-judgment-fields').checked;updateJudgmentSetting();layoutImages();save();});
  $('participant').addEventListener('input',()=>{state.participant=$('participant').value;save();});
- $('distance-filter').addEventListener('change',()=>{accountTime();state.filter=$('distance-filter').value;const q=selectedQueue();state.current=q.find(id=>!state.ratings[id])||null;save();render();});
+ $('distance-filter').addEventListener('change',()=>{accountTime();state.filter=$('distance-filter').value;const q=selectedQueue();active().current=q.find(id=>!active().ratings[id])||null;save();render();});
  $('backup-export').addEventListener('click',()=>{accountTime();save();exportFile('quality-evaluation-backup-'+state.sessionId.slice(0,8)+'.json',JSON.stringify(state,null,2),'application/json');startTime();});
  $('backup-import').addEventListener('change',async event=>{
   const file=event.target.files[0];if(!file)return;
   try{
-   if(file.size>2e6)throw Error('This file is too large to be a session backup.');
+   if(file.size>10e6)throw Error('This file is too large to be a session backup.');
    const restored=validateState(JSON.parse(await file.text()));
-   const hasWork=Object.keys(state.ratings).length||Object.values(state.drafts).some(d=>d.notes||d.confidence||d.ties.some(Boolean)||d.referenceViewed||d.elapsedMs>1000||d.order.join('')!=='ABC');
-   if(hasWork&&!confirm('Replace this session with the selected backup? Download a backup first if you want to keep current progress.'))return;
-   accountTime();state=restored;externalChange=false;save();$('session-dialog').close();render();notify('Backup restored.');
+   const hasWork=Object.values(state.modes).some(c=>c&&(Object.keys(c.ratings).length||Object.values(c.drafts).some(d=>d.notes||d.confidence||d.choice||d.ties?.some(Boolean)||d.referenceViewed||d.elapsedMs>1000||(d.order&&d.order.join('')!=='ABC'))));
+   if(hasWork&&!confirm('Replace both modes with the selected backup? Download a backup first if you want to keep current progress.'))return;
+   accountTime();state=restored;externalChange=false;ensureCurrent();save();$('session-dialog').close();render();notify('Backup restored.');
   }catch(error){$('backup-message').textContent='Could not restore: '+error.message;$('backup-message').hidden=false;}
   finally{event.target.value='';}
  });
  $('new-session').addEventListener('click',()=>$('new-confirm').hidden=false);
  $('new-cancel').addEventListener('click',()=>$('new-confirm').hidden=true);
- $('new-confirm-button').addEventListener('click',()=>{accountTime();state=freshState();externalChange=false;notice('');save();$('session-dialog').close();render();notify('New session initialized.');});
+ $('new-confirm-button').addEventListener('click',()=>{accountTime();state=freshState(state.mode);externalChange=false;notice('');save();$('session-dialog').close();render();notify('New session initialized.');});
  document.addEventListener('visibilitychange',()=>{if(document.hidden){accountTime();save();}else startTime();});
  window.addEventListener('pagehide',()=>{accountTime();save();});
  window.addEventListener('resize',layoutImages);
@@ -553,7 +660,7 @@ dialog::backdrop { background: #1a1d206b; }
   accountTime();externalChange=true;notice('This session changed in another tab. Reload this tab before continuing. You can download a backup of this tab from Settings.');
   $('comparison').inert=true;updateStatus();
  });
- if(state.current&&!selectedQueue().includes(state.current))state.current=selectedQueue().find(id=>!state.ratings[id])||null;
+ ensureCurrent();
  render();
 })();
 </script>
